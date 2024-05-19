@@ -57,8 +57,9 @@ def plot_data():
 
     fig, ax = plt.subplots()
     ax.scatter(df["time"], df["page"])
-    ax.set(xlabel="time", ylabel="percentile")
+    ax.set(title="2024", xlabel="time", ylabel="percentile")
     ax.xaxis.set_major_formatter(dates.DateFormatter("%H:%M"))
+    fig.savefig("2024.png")
     plt.show()
 
 
