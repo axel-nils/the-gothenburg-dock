@@ -1,7 +1,5 @@
-import os
 import re
 from shutil import make_archive
-import sys
 from time import sleep
 from zipfile import ZipFile
 
@@ -11,11 +9,15 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib import dates
 
+import seaborn as sns
+sns.set_theme()
+
+
 URL = ("https://goteborgsvarvet.r.mikatiming.com/2024/?event=GV_9TG4PPOP195&num_results=250&pid=list"
        "&ranking=time_finish_netto&search%5Bsex%5D=M&search%5Bage_class%5D=%25")
 PATH = "./data"
 YEAR = 2024
-PAGES = range(100)
+PAGES = range(104)
 
 
 def download_data(pages=PAGES):
@@ -38,30 +40,43 @@ def parse_data():
 
     with ZipFile(zip_file_path) as z:
         for filename in z.namelist():
+            print(filename)
             if filename.endswith(".html"):
                 with z.open(filename) as fp:
                     soup = BeautifulSoup(fp, features="html.parser")
-                    hit = soup.find(class_="list-active list-group-item row")
-                    time_pattern = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$")
-                    finish_time = hit.find(string=time_pattern)
-                    page = filename.split("/")[1].split(".")[0]
-                    times.append((int(YEAR), int(page), finish_time))
+                    hits = soup.findAll(class_="list-active list-group-item row")
+                    for hit in hits:
+                        time_pattern = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$")
+                        finish_time = hit.find(string=time_pattern)
+                        page = filename.split("/")[1].split(".")[0]
+                        times.append((int(YEAR), int(page), finish_time))
 
     df = pd.DataFrame.from_records(times, columns=("year", "page", "time"))
     df.sort_values(by=["year", "page"]).reset_index(drop=True).to_csv("times.csv", encoding="UTF-8")
 
 
 def plot_data():
+
     df = pd.read_csv("times.csv")
     df["time"] = pd.to_datetime(df["time"], format="%H:%M:%S")
+    df.drop(df.tail(40).index, inplace=True)
 
-    fig, ax = plt.subplots()
-    ax.scatter(df["time"], df["page"])
-    ax.set(title="2024", xlabel="time", ylabel="percentile")
-    ax.xaxis.set_major_formatter(dates.DateFormatter("%H:%M"))
-    fig.savefig("2024.png")
+    fig, ax = plt.subplots(figsize=(12, 6), layout="tight")
+    fig.suptitle("Göteborgsvarvet 2024")
+    sns.histplot(data=df["time"], ax=ax, label="men", color="skyblue")
+    # sns.histplot(data=df["time"], ax=ax, label="men", color="salmon")
+    ax.xaxis.set_major_formatter(dates.DateFormatter("%H:%M:%S"))
+    ax.set(xlabel="Finishing time")
+    ax.legend()
+    fig.savefig("2024.pdf")
     plt.show()
 
 
-if __name__ == '__main__':
-    globals()[sys.argv[1]]()
+def main():
+    #download_data()
+    #zip_data()
+    #parse_data()
+    plot_data()
+
+if __name__ == "__main__":
+    main()
