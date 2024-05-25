@@ -68,7 +68,7 @@ def plot_data():
     ax.xaxis.set_major_formatter(dates.DateFormatter("%H:%M:%S"))
     ax.set(xlabel="Finishing time")
     ax.legend()
-    fig.savefig("2024.pdf")
+    fig.savefig("2024.pdf") # png
     plt.show()
 
 
