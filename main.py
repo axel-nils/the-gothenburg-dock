@@ -14,10 +14,10 @@ sns.set_theme()
 
 
 URL = ("https://goteborgsvarvet.r.mikatiming.com/2024/?event=GV_9TG4PPOP195&num_results=250&pid=list"
-       "&ranking=time_finish_netto&search%5Bsex%5D=M&search%5Bage_class%5D=%25")
+       "&ranking=time_finish_netto&search%5Bsex%5D=W&search%5Bage_class%5D=%25")
 PATH = "./data"
 YEAR = 2024
-PAGES = range(104)
+PAGES = range(60)
 
 
 def download_data(pages=PAGES):
@@ -29,14 +29,14 @@ def download_data(pages=PAGES):
 
 
 def zip_data():
-    base_dir = PATH
-    make_archive("data", "zip", base_dir)
+    base_dir = PATH + "/2024w"
+    make_archive("data_w", "zip", base_dir)
 
 
 def parse_data():
     times = []
 
-    zip_file_path = "./data.zip"
+    zip_file_path = "./data_w.zip"
 
     with ZipFile(zip_file_path) as z:
         for filename in z.namelist():
@@ -48,11 +48,11 @@ def parse_data():
                     for hit in hits:
                         time_pattern = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$")
                         finish_time = hit.find(string=time_pattern)
-                        page = filename.split("/")[1].split(".")[0]
+                        page = filename.split(".")[0]
                         times.append((int(YEAR), int(page), finish_time))
 
     df = pd.DataFrame.from_records(times, columns=("year", "page", "time"))
-    df.sort_values(by=["year", "page"]).reset_index(drop=True).to_csv("times.csv", encoding="UTF-8")
+    df.sort_values(by=["year", "page"]).reset_index(drop=True).to_csv("times_w.csv", encoding="UTF-8")
 
 
 def plot_data():
@@ -61,14 +61,20 @@ def plot_data():
     df["time"] = pd.to_datetime(df["time"], format="%H:%M:%S")
     df.drop(df.tail(40).index, inplace=True)
 
+    dfw = pd.read_csv("times_w.csv")
+    dfw["time"] = pd.to_datetime(dfw["time"], format="%H:%M:%S")
+    dfw.drop(dfw.tail(40).index, inplace=True)
+
     fig, ax = plt.subplots(figsize=(12, 6), layout="tight")
     fig.suptitle("Göteborgsvarvet 2024")
     sns.histplot(data=df["time"], ax=ax, label="men", color="skyblue")
-    # sns.histplot(data=df["time"], ax=ax, label="men", color="salmon")
+    sns.histplot(data=dfw["time"], ax=ax, label="women", color="salmon")
     ax.xaxis.set_major_formatter(dates.DateFormatter("%H:%M:%S"))
     ax.set(xlabel="Finishing time")
     ax.legend()
-    fig.savefig("2024.pdf") # png
+
+    fig.savefig("2024.pdf")
+    fig.savefig("2024.png")
     plt.show()
 
 
